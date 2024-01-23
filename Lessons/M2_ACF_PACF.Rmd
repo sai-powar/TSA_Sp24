@@ -88,7 +88,7 @@ A plot of observed values over time is the first thing you do to start understan
 
 ```{r}
 #using package ggplot2
-ggplot()
+ggplot(inflow_data)
 
 #adding two time series to the same plot
 

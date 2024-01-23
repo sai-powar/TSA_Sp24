@@ -1,6 +1,6 @@
 ---
 title: "More on Importing Data Sets"
-author: "Luana Lima"
+author: "Luana Lima/Sai Powar"
 output: pdf_document
 editor_options: 
   chunk_output_type: console
