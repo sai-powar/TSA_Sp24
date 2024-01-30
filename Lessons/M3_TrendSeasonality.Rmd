@@ -1,6 +1,6 @@
 ---
 title: "M3: Class Exercise on Trend and Season"
-author: "Luana Lima"
+author: "Luana Lima - Sai Powar"
 output: pdf_document
 ---
 
