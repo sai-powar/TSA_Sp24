@@ -1,7 +1,7 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2024"
 subtitle: "Assignment 3 - Due date 02/01/24"
-author: "Student Name"
+author: "Sai Powar"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -35,7 +35,25 @@ R packages needed for this assignment:"forecast","tseries", and "Kendall". Insta
 
 ```{r}
 #Load/install required package here
+library(forecast)
+library(tseries)
+library(Kendall)
+library(lubridate)
+library(ggplot2)
+library(cowplot)
+library(ggfortify)
+```
 
+```{r}
+#importing dataset
+raw_energy_data <- read.table(file="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header=TRUE,dec = ".",sep=",",stringsAsFactors = TRUE)
+
+#creating smaller dataframe
+energy_data <- raw_energy_data[,(4:6)]
+
+#creating time series object
+ts_energy_data <- ts(energy_data,start = c(1973,1),frequency=12)
+head(ts_energy_data)
 ```
 
 ##Trend Component
@@ -44,11 +62,59 @@ R packages needed for this assignment:"forecast","tseries", and "Kendall". Insta
 For each time series, i.e., Renewable Energy Production and Hydroelectric Consumption create three plots: one with time series, one with the ACF and with the PACF. You may use the some code form A2, but I want all the three plots side by side as in a grid.
 (Hint: use function `plot_grid()` from the `cowplot` package)
 
+```{r}
+
+#creating objects for rows and columns
+nenergy <- ncol(energy_data)
+nobs <- nrow(energy_data)
+
+plot_grid(
+  autoplot(ts_energy_data[,1],ylab="Tot. Biomass Energy Prod."),
+  autoplot(Acf(ts_energy_data[,1],lag.max=40,plot=FALSE),main=NULL),
+  autoplot(Pacf(ts_energy_data[,1],lag.max=40,plot=FALSE),main=NULL),
+  autoplot(ts_energy_data[,2],ylab="Tot. Renewable Energy Prod."),
+  autoplot(Acf(ts_energy_data[,2],lag.max=40,plot=FALSE),main=NULL),
+  autoplot(Pacf(ts_energy_data[,2],lag.max=40,plot=FALSE),main=NULL),
+  autoplot(ts_energy_data[,3],ylab="Hydroelectric Consumption"),
+  autoplot(Acf(ts_energy_data[,3],lag.max=40,plot=FALSE),main=NULL),
+  autoplot(Pacf(ts_energy_data[,3],lag.max=40,plot=FALSE),main=NULL),
+  nrow=3,ncol=3
+)
+
+#Q: DO we have to have all 6 plots in one grid?
+```
+
 ### Q2
 From the plot in Q1, do the series Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption appear to have a trend? If yes, what kind of trend?
 
+
+Total Biomass Energy Production and Total Renewable Energy Production appear to have an overall linear trend. However, I do see some possibility of seasonality in the 1990-2000 decade that could be worth exploring. Additionally, there is a more "clear" linear trend from 2000 onwards, compared the years before that. 
+
+
+Hydroelectric Power Consumption series appears to have a seasonal trend. There could be a slight, downward linear trend but we would need to explore the data series more to see if the effect is pronounced. 
+
+
 ### Q3
 Use the *lm()* function to fit a linear trend to the three time series. Ask R to print the summary of the regression. Interpret the regression output, i.e., slope and intercept. Save the regression coefficients for further analysis.
+
+```{r}
+#Create vector t
+t <- c(1:nobs)
+
+#Fiting a linear trend to TS of Total Biomass Energy Production
+biomass_linear = lm(inflow_data[,iHP+1]~t)  
+summary(linear_trend_model)
+beta0=as.numeric(linear_trend_model$coefficients[1])  #first coefficient is the intercept term or beta0
+beta1=as.numeric(linear_trend_model$coefficients[2])  #second coefficient is the slope or beta1
+
+#Let's plot the time series with its trend line
+ggplot(inflow_data, aes(x=my_date, y=inflow_data[,(1+iHP)])) +
+            geom_line(color="blue") +
+            ylab(paste0("Inflow ",colnames(inflow_data)[(1+iHP)],sep="")) +
+            #geom_abline(intercept = beta0, slope = beta1, color="red")
+            geom_smooth(color="red",method="lm") 
+
+```
  
 ### Q4
 Use the regression coefficients from Q3 to detrend the series. Plot the detrended series and compare with the plots from Q1. What happened? Did anything change?
