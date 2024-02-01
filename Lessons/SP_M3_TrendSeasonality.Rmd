@@ -128,6 +128,10 @@ for(i in 1:nhydro){
   Pacf(ts_inflow_data[,i],lag.max=40,main=paste("Inflows HP",i,sep=""))
 }
 
+#autoplot does not work with the object so create the object with the acf(plot=false) and then use the autoplot function 
+#even after 30-40 there is the acf above blue line, so lots of time dependence 
+#detrended data - no significant lags after lag 20. 
+#Main point = We were able to decrease the time dependency so we were to reduce the number of variables we add it to our model (the slope and intercept)
 ```
 
 
@@ -162,8 +166,32 @@ Now let's shift attention to the seasonal component.
 
 ```{r}
 #Use seasonal means model
+iHP<-1
+#create dummies
+dummies <- seasonaldummy(ts_inflow_data[,iHP])
+#december is all zero's because ddecember is represented in the inntercept term
+#ideally, you deseason the detrended data
 
+#regress on dummies
+seas_linear_model<-lm(inflow_data[,(iHP+1)]~dummies)
+summary(seas_linear_model)
+#for assignment you don't need to do biomass
 
+#store coeff
+#regression coefficients are more than 1 so be cognizant about that 
+beta0<-seas_linear_model$coefficients[1]
+beta1<-seas_linear_model$coefficients[2:12]
+
+#seasonal comp
+#Q: why are we creating an array?
+seas_comp<-array(0,nobs)
+for i in 
+
+#seasonal means model gives you a constant seasonal component over time. For every January, we have one value and same with all months. So it looks constant over time. 
+#seasonal means model - assumption is that the seasonal component is constant over time. 
+#dummies are created to linearize the expression of all the different betas. Write mu(t) in a linear format. 
+#betas are the averages of each of the 12 months 
+#seasonal means model is constant over time, but if seasonality remains in the ACF model after removing the seasonal component that means that the seasonal component is also varying with time aka betas are varying over time 
 ```
 
 ##Exercise
