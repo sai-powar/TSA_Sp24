@@ -48,12 +48,17 @@ library(ggfortify)
 #importing dataset
 raw_energy_data <- read.table(file="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header=TRUE,dec = ".",sep=",",stringsAsFactors = TRUE)
 
-#creating smaller dataframe
-energy_data <- raw_energy_data[,(4:6)]
+#date
+energy_date <- ym(raw_energy_data[,1])  #function my from package lubridate
+head(energy_date)
+energy_data <- cbind(energy_date,raw_energy_data[,(4:6)])
+head(energy_data)
 
 #creating time series object
-ts_energy_data <- ts(energy_data,start = c(1973,1),frequency=12)
+ts_energy_data <- ts(energy_data[2:4],start = c(1973,1),frequency=12)
 head(ts_energy_data)
+
+
 ```
 
 ##Trend Component
@@ -65,8 +70,8 @@ For each time series, i.e., Renewable Energy Production and Hydroelectric Consum
 ```{r}
 
 #creating objects for rows and columns
-nenergy <- ncol(energy_data)
-nobs <- nrow(energy_data)
+ncol_energy <- ncol(energy_data)-1
+nobs_energy <- nrow(energy_data)
 
 plot_grid(
   autoplot(ts_energy_data[,1],ylab="Tot. Biomass Energy Prod."),
@@ -99,11 +104,11 @@ Use the *lm()* function to fit a linear trend to the three time series. Ask R to
 
 ```{r}
 #Create vector t
-t <- c(1:nobs)
+t <- c(1:nobs_energy)
 
 #Fiting a linear trend to TS of Total Biomass Energy Production
-biomass_linear = lm(inflow_data[,iHP+1]~t)  
-summary(linear_trend_model)
+biomass_linear = lm(inflow_data[,2]~t)  
+summary(bio)
 beta0=as.numeric(linear_trend_model$coefficients[1])  #first coefficient is the intercept term or beta0
 beta1=as.numeric(linear_trend_model$coefficients[2])  #second coefficient is the slope or beta1
 
