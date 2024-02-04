@@ -5,7 +5,7 @@ author: "Sai Powar"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 ```{r}
 
@@ -42,6 +42,7 @@ library(lubridate)
 library(ggplot2)
 library(cowplot)
 library(ggfortify)
+
 ```
 
 ```{r}
@@ -73,7 +74,7 @@ For each time series, i.e., Renewable Energy Production and Hydroelectric Consum
 ncol_energy <- ncol(energy_data)-1
 nobs_energy <- nrow(energy_data)
 
-plot_grid(
+p <- plot_grid(
   autoplot(ts_energy_data[,1],ylab="Tot. Biomass Energy Prod."),
   autoplot(Acf(ts_energy_data[,1],lag.max=40,plot=FALSE),main=NULL),
   autoplot(Pacf(ts_energy_data[,1],lag.max=40,plot=FALSE),main=NULL),
@@ -85,6 +86,7 @@ plot_grid(
   autoplot(Pacf(ts_energy_data[,3],lag.max=40,plot=FALSE),main=NULL),
   nrow=3,ncol=3
 )
+p
 
 #Q: DO we have to have all 6 plots in one grid?
 ```
@@ -106,26 +108,90 @@ Use the *lm()* function to fit a linear trend to the three time series. Ask R to
 #Create vector t
 t <- c(1:nobs_energy)
 
-#Fiting a linear trend to TS of Total Biomass Energy Production
-biomass_linear = lm(inflow_data[,2]~t)  
-summary(bio)
-beta0=as.numeric(linear_trend_model$coefficients[1])  #first coefficient is the intercept term or beta0
-beta1=as.numeric(linear_trend_model$coefficients[2])  #second coefficient is the slope or beta1
+#Fiting a linear trend to TS of the time series
+biomass_linear = lm(energy_data[,2]~t)  
+summary(biomass_linear)
+bio_beta0=as.numeric(biomass_linear$coefficients[1])  
+bio_beta1=as.numeric(biomass_linear$coefficients[2])
 
-#Let's plot the time series with its trend line
-ggplot(inflow_data, aes(x=my_date, y=inflow_data[,(1+iHP)])) +
-            geom_line(color="blue") +
-            ylab(paste0("Inflow ",colnames(inflow_data)[(1+iHP)],sep="")) +
-            #geom_abline(intercept = beta0, slope = beta1, color="red")
-            geom_smooth(color="red",method="lm") 
+re_linear = lm(energy_data[,3]~t)  
+summary(re_linear)
+re_beta0=as.numeric(re_linear$coefficients[1])  
+re_beta1=as.numeric(re_linear$coefficients[2])
 
+hydro_linear = lm(energy_data[,4]~t)  
+summary(hydro_linear)
+hydro_beta0=as.numeric(hydro_linear$coefficients[1])  
+hydro_beta1=as.numeric(hydro_linear$coefficients[2])
+
+#Q: How do we interpret the coefficients?
 ```
  
 ### Q4
 Use the regression coefficients from Q3 to detrend the series. Plot the detrended series and compare with the plots from Q1. What happened? Did anything change?
 
+```{r}
+
+#removing the trend from series, dt=detrended
+dt_biomass_linear <- energy_data[,2]-(bio_beta0+bio_beta1*t)
+dt_re_linear <- energy_data[,3]-(re_beta0+re_beta1*t)
+dt_hydro_linear <- energy_data[,4]-(hydro_beta0+hydro_beta1*t)
+
+#plotting the detrended series
+p1 <- ggplot(energy_data, aes(x=energy_date, y=energy_data[,2])) +
+            geom_line(color="skyblue") +
+            ylab("Total Biomass Energy Production") +
+            #geom_smooth(color="red",method="lm") +
+            geom_line(aes(y=dt_biomass_linear), col="blue")
+            #geom_smooth(aes(y=dt_biomass_linear),color="orange",method="lm")
+p1
+
+p2 <- ggplot(energy_data, aes(x=energy_date, y=energy_data[,3])) +
+            geom_line(color="darkgrey") +
+            ylab("Total Renewable Energy Production") +
+            geom_line(aes(y=dt_re_linear), col="black")
+p2
+
+p3 <- ggplot(energy_data, aes(x=energy_date, y=energy_data[,4])) +
+            geom_line(color="lightgreen") +
+            ylab("Hydroelectric Power Consumption") +
+            geom_line(aes(y=dt_re_linear), col="darkgreen")
+p3
+
+```
+
+
+For the biomass and renewable energy production series, the detrended series do not have the upward trend from the original series. However, there is still some variability in the data that is not removed from the detrending. This corresponds to the R-squared value from the linear regression summary. 
+For the hydroelectric power consumption, the detrended series looks odd in a way. The series is negative for some years and it is evident that detrending using the linear component does not really help in understanding the true trend component for this series. 
+
+
 ### Q5
 Plot ACF and PACF for the detrended series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. nut mot mandatory. Did the plots change? How?
+
+```{r}
+
+#creating time series object for detrended series 
+ts_dt_bio_lin <- ts(dt_biomass_linear,start=c(1973,1),frequency=12)
+ts_dt_re_lin <- ts(dt_re_linear,start=c(1973,1),frequency=12)
+ts_dt_hydro_lin <- ts(dt_hydro_linear,start=c(1973,1),frequency=12)
+
+
+p5 <- plot_grid(
+  autoplot(ts_dt_bio_lin,ylab="Tot. Biomass Energy Prod."),
+  autoplot(Acf(ts_dt_bio_lin,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(Pacf(ts_dt_bio_lin,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(ts_dt_re_lin,ylab="Tot. Renewable Energy Prod."),
+  autoplot(Acf(ts_dt_re_lin,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(Pacf(ts_dt_re_lin,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(ts_dt_hydro_lin,ylab="Hydroelectric Consumption"),
+  autoplot(Acf(ts_dt_hydro_lin,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(Pacf(ts_dt_hydro_lin,lag.max=40,plot=FALSE),main=NULL),
+  nrow=3,ncol=3
+)
+p5
+```
+
+The ACF and PACF plots haven't changed significantly, so there is still time dependence remaining in the series. 
 
 ## Seasonal Component
 
@@ -134,13 +200,108 @@ Set aside the detrended series and consider the original series again from Q1 to
 ### Q6
 Just by looking at the time series and the acf plots, do the series seem to have a seasonal trend? No need to run any code to answer your question. Just type in you answer below.
 
+The hydroelectric power consumption series definitely has a seasonal component. There seems to be a seasonal component in the other two series as well, but in shorter time frames not the entire series. But, it is not as prominent as it is in the hydroelectric series. 
+
 ### Q7
 Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) the two time series. Ask R to print the summary of the regression. Interpret the regression output. From the results which series have a seasonal trend? Do the results match you answer to Q6?
+
+```{r}
+
+#Creating the seasonal dummies
+dummies <- seasonaldummy(ts_energy_data[,2])  
+
+#Then fit a linear model to the seasonal dummies
+bio_seas <- lm(energy_data[,2]~dummies)
+summary(bio_seas)
+
+re_seas <- lm(energy_data[,3]~dummies)
+summary(re_seas)
+
+hydro_seas <- lm(energy_data[,4]~dummies)
+summary(hydro_seas)
+
+```
+
+For the biomass and renewable energy series, the regression output shows that the series does not have a significant seasonal component. None of the coefficients are significant and the p-values are also high. For the hydroelectric time series, the regression output shows that the series has a seasonal component. All the coefficients are significant and the overall p-value is also low. 
 
 ### Q8
 Use the regression coefficients from Q7 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
 
+```{r}
+#Store regression coefficients
+bio_beta_int <- bio_seas$coefficients[1]
+bio_beta_coeff <- bio_seas$coefficients[2:12]
+
+re_beta_int <- re_seas$coefficients[1]
+re_beta_coeff <- re_seas$coefficients[2:12]
+
+hydro_beta_int <- hydro_seas$coefficients[1]
+hydro_beta_coeff <- hydro_seas$coefficients[2:12]
+
+#compute seasonal component
+bio_seas_comp <- array(0,nobs_energy)
+for(i in 1:nobs_energy){
+  bio_seas_comp[i] <- (bio_beta_int+bio_beta_coeff %*% dummies[i,])
+}
+
+re_seas_comp <- array(0,nobs_energy)
+for(i in 1:nobs_energy){
+  re_seas_comp[i] <- (re_beta_int+re_beta_coeff %*% dummies[i,])
+}
+
+hydro_seas_comp <- array(0,nobs_energy)
+for(i in 1:nobs_energy){
+  hydro_seas_comp[i] <- (hydro_beta_int+hydro_beta_coeff %*% dummies[i,])
+}
+
+#Removing seasonal component
+deseason_bio <- energy_data[,2]-bio_seas_comp
+deseason_re <- energy_data[,3]-re_seas_comp
+deseason_hydro <- energy_data[,4]-hydro_seas_comp
+
+#Understanding what we did
+p6<-ggplot(energy_data, aes(x=energy_date, y=energy_data[,2])) +
+            geom_line(color="blue") +
+            ylab("Biomass Energy Production") +
+            geom_line(aes(y=deseason_bio), col="green")
+p6
+
+p7<-ggplot(energy_data, aes(x=energy_date, y=energy_data[,3])) +
+            geom_line(color="blue") +
+            ylab("Renewable Energy Production") +
+            geom_line(aes(y=deseason_re), col="green")
+p7
+
+p8<-ggplot(energy_data, aes(x=energy_date, y=energy_data[,4])) +
+            geom_line(color="blue") +
+            ylab("Hydroelectric Energy Production") +
+            geom_line(aes(y=deseason_hydro), col="green")
+p8
+```
+
 ### Q9
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. nut mot mandatory. Did the plots change? How?
+
+```{r}
+ts_deseason_bio <- ts(deseason_bio,start=c(1973,1),frequency=12)
+ts_deseason_re <- ts(deseason_re,start=c(1973,1),frequency=12)
+ts_deseason_hydro <- ts(deseason_hydro,start=c(1973,1),frequency=12)
+
+
+p9 <- plot_grid(
+  autoplot(ts_deseason_bio,ylab="Tot. Biomass Energy Prod."),
+  autoplot(Acf(ts_deseason_bio,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(Pacf(ts_deseason_bio,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(ts_deseason_re,ylab="Tot. Renewable Energy Prod."),
+  autoplot(Acf(ts_deseason_re,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(Pacf(ts_deseason_re,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(ts_deseason_hydro,ylab="Hydroelectric Consumption"),
+  autoplot(Acf(ts_deseason_hydro,lag.max=40,plot=FALSE),main=NULL),
+  autoplot(Pacf(ts_deseason_hydro,lag.max=40,plot=FALSE),main=NULL),
+  nrow=3,ncol=3
+)
+p9
+
+```
 
 
