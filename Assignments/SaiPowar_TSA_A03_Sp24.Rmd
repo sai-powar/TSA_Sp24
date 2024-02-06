@@ -88,7 +88,6 @@ p <- plot_grid(
 )
 p
 
-#Q: DO we have to have all 6 plots in one grid?
 ```
 
 ### Q2
@@ -124,8 +123,12 @@ summary(hydro_linear)
 hydro_beta0=as.numeric(hydro_linear$coefficients[1])  
 hydro_beta1=as.numeric(hydro_linear$coefficients[2])
 
-#Q: How do we interpret the coefficients?
 ```
+Biomass - For every unit increase in time (for every month), the biomass energy production increases by 0.477 trillion Btu. When time = 0 (at the beginning of the time series), the biomass energy production is 134.278 trillion Btu.
+
+Renewable - For every unit increase in time (for every month), the renewable energy production increases by 0.704 trillion Btu. When time = 0 (at the beginning of the time series), the renewable energy production is 180.989 trillion Btu.
+
+Hydroelectric - For every unit increase in time (for every month), the hydroelectric power consumption decreases by 0.00985 trillion Btu. When time = 0 (at the beginning of the time series), the hydroelectric power consumption is 82.735 trillion Btu.
  
 ### Q4
 Use the regression coefficients from Q3 to detrend the series. Plot the detrended series and compare with the plots from Q1. What happened? Did anything change?
@@ -141,20 +144,21 @@ dt_hydro_linear <- energy_data[,4]-(hydro_beta0+hydro_beta1*t)
 p1 <- ggplot(energy_data, aes(x=energy_date, y=energy_data[,2])) +
             geom_line(color="skyblue") +
             ylab("Total Biomass Energy Production") +
-            #geom_smooth(color="red",method="lm") +
+            xlab("Time (1973-2023)")+
             geom_line(aes(y=dt_biomass_linear), col="blue")
-            #geom_smooth(aes(y=dt_biomass_linear),color="orange",method="lm")
 p1
 
 p2 <- ggplot(energy_data, aes(x=energy_date, y=energy_data[,3])) +
             geom_line(color="darkgrey") +
             ylab("Total Renewable Energy Production") +
+            xlab("Time (1973-2023)")+
             geom_line(aes(y=dt_re_linear), col="black")
 p2
 
 p3 <- ggplot(energy_data, aes(x=energy_date, y=energy_data[,4])) +
             geom_line(color="lightgreen") +
             ylab("Hydroelectric Power Consumption") +
+            xlab("Time (1973-2023)")+
             geom_line(aes(y=dt_re_linear), col="darkgreen")
 p3
 
@@ -191,7 +195,11 @@ p5 <- plot_grid(
 p5
 ```
 
-The ACF and PACF plots haven't changed significantly, so there is still time dependence remaining in the series. 
+Biomass - For the detrended series the ACF values start falling below 0.75 after lag ~15, whereas this happened at lag 40 in the original series. 
+
+Renewable - For the detrended series the ACF values start falling below 0.75 after lag 20, whereas this happened at lag 40 in the original series. 
+
+Hydroelectric - There isn't a significant decrease in the ACF and PACF plots between the trended and detrended series. 
 
 ## Seasonal Component
 
@@ -200,7 +208,7 @@ Set aside the detrended series and consider the original series again from Q1 to
 ### Q6
 Just by looking at the time series and the acf plots, do the series seem to have a seasonal trend? No need to run any code to answer your question. Just type in you answer below.
 
-The hydroelectric power consumption series definitely has a seasonal component. There seems to be a seasonal component in the other two series as well, but in shorter time frames not the entire series. But, it is not as prominent as it is in the hydroelectric series. 
+The hydroelectric power consumption series definitely has a seasonal component. There seems to be a seasonal component in the other two series as well, but in shorter time frames and not the entire series. But, it is not as prominent as it is in the hydroelectric series. 
 
 ### Q7
 Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) the two time series. Ask R to print the summary of the regression. Interpret the regression output. From the results which series have a seasonal trend? Do the results match you answer to Q6?
@@ -263,21 +271,26 @@ deseason_hydro <- energy_data[,4]-hydro_seas_comp
 p6<-ggplot(energy_data, aes(x=energy_date, y=energy_data[,2])) +
             geom_line(color="blue") +
             ylab("Biomass Energy Production") +
+            xlab("Time (1973-2023)")+
             geom_line(aes(y=deseason_bio), col="green")
 p6
 
 p7<-ggplot(energy_data, aes(x=energy_date, y=energy_data[,3])) +
             geom_line(color="blue") +
             ylab("Renewable Energy Production") +
+            xlab("Time (1973-2023)")+
             geom_line(aes(y=deseason_re), col="green")
 p7
 
 p8<-ggplot(energy_data, aes(x=energy_date, y=energy_data[,4])) +
             geom_line(color="blue") +
             ylab("Hydroelectric Energy Production") +
+            xlab("Time (1973-2023)")+
             geom_line(aes(y=deseason_hydro), col="green")
 p8
 ```
+
+For biomass and hydroelectric, the linear trend still remains. However, for the hydroelectric consumption, removing the seasonal component changed the number of peaks and valleys indicating that the series does not have any seasonal variability and the remaining variability from another variable/reason. 
 
 ### Q9
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. nut mot mandatory. Did the plots change? How?
@@ -303,5 +316,8 @@ p9 <- plot_grid(
 p9
 
 ```
+
+The plot for hydroelectric component has changed a lot. The ACF values fall below the blue line/are not significant after lag 20. The seasonal pattern of the ACF does not exist. Additionally, in the PACF plot, the values are not significant throughout. 
+The ACF plots for biomass and hydroelectric have not changed. 
 
 
