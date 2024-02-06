@@ -159,7 +159,7 @@ p3 <- ggplot(energy_data, aes(x=energy_date, y=energy_data[,4])) +
             geom_line(color="lightgreen") +
             ylab("Hydroelectric Power Consumption") +
             xlab("Time (1973-2023)")+
-            geom_line(aes(y=dt_re_linear), col="darkgreen")
+            geom_line(aes(y=dt_re_linear), col="darkgreen") #this needs to be dt_hydro_linear
 p3
 
 ```
@@ -290,7 +290,7 @@ p8<-ggplot(energy_data, aes(x=energy_date, y=energy_data[,4])) +
 p8
 ```
 
-For biomass and hydroelectric, the linear trend still remains. However, for the hydroelectric consumption, removing the seasonal component changed the number of peaks and valleys indicating that the series does not have any seasonal variability and the remaining variability from another variable/reason. 
+For biomass and hydroelectric, the linear trend still remains. However, for the hydroelectric consumption, removing the seasonal component changed the number of peaks and valleys indicating that the series does not have any (#has less) seasonal variability and the remaining variability from another variable/reason. 
 
 ### Q9
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. nut mot mandatory. Did the plots change? How?
@@ -318,6 +318,7 @@ p9
 ```
 
 The plot for hydroelectric component has changed a lot. The ACF values fall below the blue line/are not significant after lag 20. The seasonal pattern of the ACF does not exist. Additionally, in the PACF plot, the values are not significant throughout. 
+(Removing the seasonanility helped eliminate some time dependence. But, still some time information is being carried because the ACF is significant at lag 12 as well. More modelling is needed.)
 The ACF plots for biomass and hydroelectric have not changed. 
 
 
