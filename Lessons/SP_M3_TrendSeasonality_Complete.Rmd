@@ -1,6 +1,6 @@
 ---
 title: "M3: Exercise"
-author: "Luana Lima"
+author: "Sai Powar"
 output: pdf_document
 ---
 
@@ -255,7 +255,7 @@ inflow_data_new_yearly <- data.frame(my_year, inflow_data_yearly)
 ggplot(inflow_data_new_yearly, aes(x=my_year, y=inflow_data_yearly)) +
             geom_line(color="blue") +
             geom_smooth(color="red",method="lm") 
-
+#not seasonal because not equally spaced 
 ```
 
 ### Mann Kendall 
@@ -269,10 +269,14 @@ Check for deterministic trend.
 SMKtest <- SeasonalMannKendall(ts_inflow_data[,iHP])
 print("Results for Seasonal Mann Kendall /n")
 print(summary(SMKtest))
+#S is positive -> increasing trend 
+#p-value is <0.05 so series does have a trend 
+#across the seasons there is an increasing trend
 
 #Use yearly date to run Mann Kendall
 print("Results of Mann Kendall on average yearly series")
 print(summary(MannKendall(inflow_data_yearly)))
+#there is a trend across the annual averages 
 
 ```
 
@@ -285,6 +289,7 @@ Also check for deterministic trend, for non-seasonal data only.
 print("Results from Spearman Correlation")
 sp_rho=cor(inflow_data_yearly,my_year,method="spearman")
 print(sp_rho)
+ 
 
 #with cor.test you can get test statistics
 sp_rho=cor.test(inflow_data_yearly,my_year,method="spearman")
@@ -299,10 +304,12 @@ Used to detect stochastic trend.
 #Null hypothesis is that data has a unit root
 print("Results for ADF test/n")
 print(adf.test(ts_inflow_data[,iHP],alternative = "stationary"))
+#reject null hypothesis - accept the hypothesis that we have a trend stationary
 
 #Now let's try the yearly data
 print("Results for ADF test on yearly data/n")
 print(adf.test(inflow_data_yearly, alternative = "stationary"))
+#if adf tells you there is a trend, then you do differencing 
 ```
 
 ##Exercise
