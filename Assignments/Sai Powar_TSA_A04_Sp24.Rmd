@@ -1,11 +1,11 @@
 ---
 title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2024"
 subtitle: "Assignment 4 - Due date 02/12/24"
-author: "Student Name"
+author: "Sai Powar"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
   
 ## Directions
@@ -22,8 +22,14 @@ R packages needed for this assignment: "xlsx" or "readxl", "ggplot2", "forecast"
 
 ```{r}
 #Load/install required package here
-
-
+library(forecast)
+library(tseries)
+library(Kendall)
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+library(base)
+library(cowplot)
 ```
 
 ## Questions 
@@ -31,8 +37,21 @@ R packages needed for this assignment: "xlsx" or "readxl", "ggplot2", "forecast"
 Consider the same data you used for A3 from the spreadsheet "Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx". The data comes from the US Energy Information and Administration and corresponds to the January 2021 Monthly Energy Review. For this assignment you will work only with the column "Total Renewable Energy Production". 
 
 ```{r}
-#Importing data set - using readxl package
+#Importing data set
+raw_energy_data <- read.table(file="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header=TRUE,dec = ".",sep=",",stringsAsFactors = TRUE)
 
+#date
+energy_date <- ym(raw_energy_data[,1])  #function my from package lubridate
+head(energy_date)
+re_data <- cbind(energy_date,raw_energy_data[,5, drop=FALSE])
+head(re_data)
+
+nobs_re <- nrow(re_data)
+t <- c(1:nobs_re)
+
+#creating time series object
+ts_re_data <- ts(re_data[,2],start = c(1973,1),frequency=12)
+head(ts_re_data)
 
 ```
 
@@ -44,16 +63,35 @@ Difference the "Total Renewable Energy Production" series using function diff().
 * *lag* integer indicating with lag to use;
 * *differences* integer indicating how many times series should be differenced.
 
-Try differencing at lag 1 only once, i.e., make `lag=1` and `differences=1`. Plot the differenced series Do the series still seem to have trend?
+Try differencing at lag 1 only once, i.e., make `lag=1` and `differences=1`. Plot the differenced series. Do the series still seem to have trend?
 
 ```{r}
-
+diff_re_data <- diff(ts_re_data, lag=1, differences = 1)
+head(diff_re_data)
+autoplot(diff_re_data,ylab="Differenced RE data", xlab = "Time", main = "Total Renewable Energy Production - Differenced Series")
 ```
+The increasing linear trend present in the original series is not seen in the differenced series. 
+
 
 ### Q2
 Copy and paste part of your code for A3 where you run the regression for Total Renewable Energy Production and subtract that from the orinal series. This should be the code for Q3 and Q4. make sure you use the same name for you time series object that you had in A3.
 
 ```{r}
+
+re_linear = lm(ts_re_data~t, cbind(ts_re_data,t))  
+summary(re_linear)
+re_beta0=as.numeric(re_linear$coefficients[1])  
+re_beta1=as.numeric(re_linear$coefficients[2])
+print(summary(re_linear))
+
+dt_re_linear <- ts_re_data-(re_beta0+re_beta1*t)
+
+p2 <- ggplot(re_data, aes(x=energy_date, y=re_data[,2])) +
+            geom_line(color="darkgrey") +
+            ylab("Total Renewable Energy Production") +
+            xlab("Time (1973-2023)")+
+            geom_line(aes(y=dt_re_linear), col="black")
+p2
 
 ```
 
@@ -63,7 +101,10 @@ Now let's compare the differenced series with the detrended series you calculate
 Using autoplot() + autolayer() create a plot that shows the three series together. Make sure your plot has a legend. The easiest way to do it is by adding the `series=` argument to each autoplot and autolayer function. Look at the key for A03 for an example. 
 
 ```{r}
+ts_dt_re_linear <- ts(dt_re_linear,frequency=12, start = c(1973,1))
+head(ts_dt_re_linear)
 
+#autoplot(ts_re_data,series="Original series")+ autolayer(dt_re_linear,series="Detrended") #+autolayer(diff_re_data,series="Differenced")+ ylab("Power")+ ggtitle("TotalRenewableEnergyProduction")
 
 ```
 
@@ -71,24 +112,54 @@ Using autoplot() + autolayer() create a plot that shows the three series togethe
 Plot the ACF for the three series and compare the plots. Add the argument `ylim=c(-0.5,1)` to the autoplot() or Acf() function - whichever you are using to generate the plots - to make sure all three y axis have the same limits. Which method do you think was more efficient in eliminating the trend? The linear regression or differencing?
 
 ```{r}
-
-
+p4_title<-ggdraw()+draw_label("ACF Plots")
+p4_plot_row <- plot_grid(
+  autoplot(Acf(ts_re_data,lag.max=40,plot=FALSE),main=NULL,ylim=c(-0.5,1),ylab = "Original Series"),
+  autoplot(Acf(diff_re_data,lag.max=40,plot=FALSE),main=NULL,ylim=c(-0.5,1),ylab = "Differenced Series"),
+  autoplot(Acf(ts_dt_re_linear,lag.max=40,plot=FALSE),main=NULL,ylim=c(-0.5,1),ylab = "Detrended Series"),
+  nrow=1,ncol=3
+)
+p4 <- plot_grid(p4_title,p4_plot_row,nrow=2,ncol=1,rel_heights = c(0.1,1))
+p4
 ```
+
+The differencing was more efficient at eliminating the trend than the linear regression. 
 
 
 ### Q5
 Compute the Seasonal Mann-Kendall and ADF Test for the original "Total Renewable Energy Production" series. Ask R to print the results. Interpret the results for both test. What is the conclusion from the Seasonal Mann Kendall test? What's the conclusion for the ADF test? Do they match what you observed in Q2? Recall that having a unit root means the series has a stochastic trend. And when a series has stochastic trend we need to use a different procedure to remove the trend.
 
 ```{r}
+SMKtest <- SeasonalMannKendall(ts_re_data)
+print("Results for Seasonal Mann Kendall /n")
+print(summary(SMKtest))
 
+print("Results for ADF test/n")
+print(adf.test(ts_re_data,alternative = "stationary"))
 
 ```
+Conclusion from SMK test: The S is positive so there is an increasing trend. The p value is <0.05 so the null hypothesis is rejected and we have a significant trend in the series. 
 
+Conclusion from ADF test: The p-value is >0.05 so we cannot reject the null hypothesis. The data has a unit root and stochastic trend. 
 
 ### Q6
 Aggregate the original "Total Renewable Energy Production" series by year. You can use the same procedure we used in class. Store series in a matrix where rows represent months and columns represent years. And then take the columns mean using function colMeans(). Recall the goal is the remove the seasonal variation from the series to check for trend. Convert the accumulates yearly series into a time series object and plot the series using autoplot().
 
 ```{r}
+
+re_data_matrix <- matrix(ts_re_data,byrow=FALSE,nrow=12)
+re_data_yearly <- colMeans(re_data_matrix)
+head(re_data_yearly)
+
+my_year <- c(year(first(energy_date)):year(last(energy_date)))
+
+re_data_new_yearly <- data.frame(my_year, re_data_yearly)
+
+ts_re_yearly <- ts(re_data_yearly, start = c(1973))
+
+p6<-autoplot(ts_re_yearly,ylab = "Avg. annual renewable energy prod.", xlab = "Time")
+p6
+
 
 ```
 
@@ -96,7 +167,23 @@ Aggregate the original "Total Renewable Energy Production" series by year. You c
 Apply the Mann Kendal, Spearman correlation rank test and ADF. Are the results from the test in agreement with the test results for the monthly series, i.e., results for Q6?
 
 ```{r}
+print("Results of Mann Kendall on average yearly series")
+print(summary(MannKendall(ts_re_yearly)))
 
+print("Results for ADF test/n")
+print(adf.test(ts_re_yearly,alternative = "stationary"))
+
+print("Results from Spearman Correlation")
+sp_rho=cor(ts_re_yearly,my_year,method="spearman")
+print(sp_rho)
+ 
+#with cor.test you can get test statistics
+sp_rho=cor.test(ts_re_yearly,my_year,method="spearman")
+print(sp_rho)
 ```
 
+The results from the annual average series are in agreement with those from the monthly series. 
 
+Mann-Kendall - Series has a trend because p-value is <-0.05.
+Spearman - the rho is 0.91 i.e. very close to 1. So, series has a linear trend. 
+ADF - Unable to reject null hypothesis because p-value is >0.05 so series has stochastic trend. 
