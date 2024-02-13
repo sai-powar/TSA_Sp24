@@ -90,7 +90,8 @@ p2 <- ggplot(re_data, aes(x=energy_date, y=re_data[,2])) +
             geom_line(color="darkgrey") +
             ylab("Total Renewable Energy Production") +
             xlab("Time (1973-2023)")+
-            geom_line(aes(y=dt_re_linear), col="black")
+            geom_line(aes(y=dt_re_linear), col="black")+
+  scale_color_manual(name='Regression Model', breaks=c('Original Series', 'Detrended Series'), values=c('Original Series'='darkgrey', 'Detrended Series'='black'))
 p2
 
 ```
@@ -104,7 +105,7 @@ Using autoplot() + autolayer() create a plot that shows the three series togethe
 ts_dt_re_linear <- ts(dt_re_linear,frequency=12, start = c(1973,1))
 head(ts_dt_re_linear)
 
-#autoplot(ts_re_data,series="Original series")+ autolayer(dt_re_linear,series="Detrended") #+autolayer(diff_re_data,series="Differenced")+ ylab("Power")+ ggtitle("TotalRenewableEnergyProduction")
+autoplot(ts_re_data,series="Original series")+ autolayer(dt_re_linear,series="Detrended series")+autolayer(diff_re_data,series="Differenced series")+ylab("")+ggtitle("Renewable Energy Production Series")
 
 ```
 
