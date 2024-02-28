@@ -39,7 +39,7 @@ Consider the same data you used for A04 from the spreadsheet "Table_10.1_Renewab
 ```{r}
 #Importing data set
 
-raw_energy_data <- read.table(file="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header=TRUE,dec = ".",sep=",",stringsAsFactors = TRUE)
+raw_energy_data <- read.table(file="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header=TRUE,dec = ".",sep=",") #,stringsAsFactors = TRUE)
 
 nobs=nrow(raw_energy_data)
 nvar=ncol(raw_energy_data)
@@ -63,8 +63,8 @@ energy_data<-energy_data%>%
   filter(energy_data$Solar.Energy.Consumption!='Not Available')
 
 #converting to numeric
-energy_data$Solar.Energy.Consumption = as.numeric(as.factor(energy_data$Solar.Energy.Consumption))
-energy_data$Wind.Energy.Consumption = as.numeric(as.factor(energy_data$Wind.Energy.Consumption))
+energy_data$Solar.Energy.Consumption = as.numeric(as.character(energy_data$Solar.Energy.Consumption))
+energy_data$Wind.Energy.Consumption = as.numeric(as.character(energy_data$Wind.Energy.Consumption))
 
 
 ```
