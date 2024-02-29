@@ -39,7 +39,7 @@ Consider the same data you used for A04 from the spreadsheet "Table_10.1_Renewab
 ```{r}
 #Importing data set
 
-raw_energy_data <- read.table(file="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header=TRUE,dec = ".",sep=",") #,stringsAsFactors = TRUE)
+raw_energy_data <- read.table(file="./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header=TRUE,dec = ".",sep=",", stringsAsFactors = FALSE)
 
 nobs=nrow(raw_energy_data)
 nvar=ncol(raw_energy_data)
@@ -135,7 +135,7 @@ decompose_wind_add<-decompose(ts_re_data[,2], type="additive")
 plot(decompose_wind_add)
 ```
 
-> Answer: The trend component isn't continuous throughout time in terms of an increasing or decreasing pattern. The production increases over time followed by sharp decreases, for example around 2008 and around 2020 for wind and around 2013 for solar. But, overall the production has increases since 1984. The random component still seems to have some seasonality and does not appear to be completely random because of the equally spaced patterns. 
+> Answer: The trend component is continuous throughout time in terms of an increasing pattern. The random component still seems to have some seasonality and does not appear to be completely random because of the equally spaced patterns. 
 
 
 ### Q5
@@ -202,7 +202,7 @@ p5
 
 ```
 
-> Answer: I don't see any difference in the clean and raw solar consumption series. For wind consumption, I see that some data was changed in the 2020 year.
+> Answer: Cleaning the data got rid of a lot of the variation in the data from 2010 onwards, which we probably don't want to remove because this is needed for future forecasting given the way the energy market functions now. 
 
 
 ### Q9
