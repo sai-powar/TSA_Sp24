@@ -1,7 +1,7 @@
 ---
 title: "ENV 797 - Time Series Analysis for Energy and Environment Applications | Spring 2024"
 subtitle: "Assignment 6 - Due date 02/28/24"
-author: "Student Name"
+author: "Sai Powar"
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -28,7 +28,7 @@ library(tseries)
 library(outliers)
 library(tidyverse)
 library(cowplot)
-
+library(sarima)
 ```
 
 This assignment has general questions about ARIMA Models.
@@ -37,13 +37,13 @@ This assignment has general questions about ARIMA Models.
 
 Describe the important characteristics of the sample autocorrelation function (ACF) plot and the partial sample autocorrelation function (PACF) plot for the following models:
 
-* AR(2)
+-   AR(2)
 
-> Answer: The ACF plot shows an exponential decay and the PACF model gives the order of the model, such that the first lag is significant/cuts off and then the following lags are within the blue lines. 
+> Answer: The ACF plot shows an exponential decay and the PACF model gives the order of the model, such that the first lag is significant/cuts off and then the following lags are within the blue lines.
 
-* MA(1)
+-   MA(1)
 
-> Answer: The ACF plot gives the order of the model, such that the first lag is significantly negative/cuts off and the following lags are within the limits. The PACF plots shows an exponential decay. 
+> Answer: The ACF plot gives the order of the model, such that the first lag is significantly negative/cuts off and the following lags are within the limits. The PACF plots shows an exponential decay.
 
 ## Q2
 
@@ -64,7 +64,6 @@ autoplot(Model_11, main = "ARMA(1,1)")
 
 (b) Plot the sample ACF for each of these models in one window to facilitate comparison (Hint: use `cowplot::plot_grid()`).
 
-
 ```{r}
 plot_grid(
   autoplot(Acf(Model_10, lag = 40, plot=FALSE), main = "ARMA(1,0)"),
@@ -83,17 +82,38 @@ plot_grid(
 
 (d) Look at the ACFs and PACFs. Imagine you had these plots for a data set and you were asked to identify the model, i.e., is it AR, MA or ARMA and the order of each component. Would you be able identify them correctly? Explain your answer.
 
-> Answer: By looking at the ACF plot of the AR model, the exponential decay pattern is clear so I would be able to identify that correctly. But, the PACF plot does not have the characteristic cut off that we discussed in class so identifying the order would be challenging. For the MA model, the PACF model kind of shows an exponential decay but it is not clear so that would also be something that I would look for additional information to confirm. For the ARMA model, the ACF and PACF plots look easier to identify for ARMA models. The ACF plot has the decay we would see for the AR part of a model and same with the PACF. 
+> Answer: By looking at the ACF plot of the AR model, the exponential decay pattern is clear so I would be able to identify that correctly. But, the PACF plot does not have the characteristic cut off that we discussed in class so identifying the order would be challenging. For the MA model, the PACF model kind of shows an exponential decay but it is not clear so that would also be something that I would look for additional information to confirm. For the ARMA model, the ACF and PACF plots look easier to identify for ARMA models. The ACF plot has the decay we would see for the AR part of a model and same with the PACF.
 
 (e) Compare the PACF values R computed with the values you provided for the lag 1 correlation coefficient, i.e., does $\phi=0.6$ match what you see on PACF for ARMA(1,0), and ARMA(1,1)? Should they match?
 
-> Answer: For ARMA(1,0) the $\phi=0.6$ matches what we would see for a 
+> Answer: The PACF values for ARMA(1,0) is slightly less than 0.5 and that for ARMA(1,1) is more than 0.6. This makes sense because the PACF value is higher than 0.6 when the model has both AR and MA components.
 
 (f) Increase number of observations to $n=1000$ and repeat parts (b)-(e).
 
 ```{r}
+fModel_10 <- arima.sim(model=list(ar = 0.6, order=c(1,0,0)), n=1000)
+fModel_01 <- arima.sim(model=list(ma = 0.9, order=c(0,0,1)), n=1000)
+fModel_11 <- arima.sim(model=list(ar = 0.6, ma = 0.9, order=c(1,0,1)), n=1000)
 
+
+autoplot(fModel_10, main = "ARMA(1,0)")
+autoplot(fModel_01, main = "ARMA(0,1)")
+autoplot(fModel_11, main = "ARMA(1,1)")
+
+plot_grid(
+  autoplot(Acf(fModel_10, lag = 40, plot=FALSE), main = "ARMA(1,0)"),
+  autoplot(Acf(fModel_01, lag = 40, plot=FALSE), main = "ARMA(0,1)"),
+  autoplot(Acf(fModel_11, lag = 40, plot=FALSE), main = "ARMA(1,1)"))
 ```
+
+```{r}
+plot_grid(
+  autoplot(Pacf(fModel_10, lag = 40, plot=FALSE), main = "ARMA(1,0)"),
+  autoplot(Pacf(fModel_01, lag = 40, plot=FALSE), main = "ARMA(0,1)"),
+  autoplot(Pacf(fModel_11, lag = 40, plot=FALSE), main = "ARMA(1,1)"))
+```
+
+> Answer: With the increase in observations, it is easier to identify the exponential decay patterns and the cutoff points in the ACF and PACF plots for all three models.
 
 ## Q3
 
@@ -101,14 +121,20 @@ Consider the ARIMA model $y_t=0.7*y_{t-1}-0.25*y_{t-12}+a_t-0.1*a_{t-1}$
 
 (a) Identify the model using the notation ARIMA$(p,d,q)(P,D,Q)_ s$, i.e., identify the integers $p,d,q,P,D,Q,s$ (if possible) from the equation.
 
+> Answer: ARIMA$(1,0,1)(1,0,0)_ 12$
+
 (b) Also from the equation what are the values of the parameters, i.e., model coefficients.
+
+> Answer: AR coefficient = 0.7, SAR coefficient = 0.25, MA coefficient = 0.1
 
 ## Q4
 
-Simulate a seasonal ARIMA$(0, 1)\times(1, 0)_{12}$ model with $\phi =0 .8$ and $\theta = 0.5$ using the `sim_sarima()` function from package `sarima`. The $12$ after the bracket tells you that $s=12$, i.e., the seasonal lag is 12, suggesting monthly data whose behavior is repeated every 12 months. You can generate as many observations as you like. Note the Integrated part was omitted. It means the series do not need differencing, therefore $d=D=0$. Plot the generated
-series using `autoplot()`. Does it look seasonal?
+Simulate a seasonal ARIMA$(0, 1)\times(1, 0)_{12}$ model with $\phi =0 .8$ and $\theta = 0.5$ using the `sim_sarima()` function from package `sarima`. The $12$ after the bracket tells you that $s=12$, i.e., the seasonal lag is 12, suggesting monthly data whose behavior is repeated every 12 months. You can generate as many observations as you like. Note the Integrated part was omitted. It means the series do not need differencing, therefore $d=D=0$. Plot the generated series using `autoplot()`. Does it look seasonal?
 
 ```{r}
+
+Model_0110 <- sim_sarima(model=list(ma=0.5,sar=0.8,nseasons=12), n = 1000)
+plot(Model_0110,type="l")
 
 ```
 
@@ -117,5 +143,10 @@ series using `autoplot()`. Does it look seasonal?
 Plot ACF and PACF of the simulated series in Q4. Comment if the plots are well representing the model you simulated, i.e., would you be able to identify the order of both non-seasonal and seasonal components from the plots? Explain.
 
 ```{r}
-
+plot(Acf(Model_0110, lag = 40), main = "ARMA(0,1)(1,0)")
 ```
+```{r}
+plot(Pacf(Model_0110, lag = 40), main = "ARMA(0,1)(1,0)")
+```
+
+> Answer: There are multiplle spikes at the seasonal lag in the ACF plot and a single spike at the seasonal lag in the PACF. So, that clearly indicates a SAR process. 
