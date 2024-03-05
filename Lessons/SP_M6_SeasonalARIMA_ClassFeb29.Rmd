@@ -258,3 +258,5 @@ Recall from M5 that the best fit for the non-seasonal time series is a ARIMA(2,1
 
 ## Discussion: Which one to do? ARIMA or SARIMA?
 
+SARIMA allows for a changing seasonal component over time. When removing the seasonal component, we are using a constant means method so we're using a constant component. 
+But, some series will need for removal of linear and seasonal trends and then removing seasonal component and then fitting ARIMA might work. 
