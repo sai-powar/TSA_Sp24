@@ -129,16 +129,24 @@ These three function take a few main arguments:
 
 ```{r}
 #Model 1: Arithmetic mean on original data
-
+Model1 <- meanf(ts_electricity_price[,"All.sectors"],h=12)
+summary(Model1)
+plot(Model1)
 
 #Model 2: Arithmetic mean on deseas data
-
+Model2 <- meanf(deseasonal_allsectors_price,h=12)
+summary(Model2)
+plot(Model2)
 
 #Model 3: Seasonal naive on original data
-
+Model3 <- snaive(ts_electricity_price[,"All.sectors"],h=12)
+summary(Model3)
+plot(Model3)
 
 #Model 4: Naive on deseas data
-
+Model4 <- naive(deseasonal_allsectors_price,h=12)
+summary(Model4)
+plot(Model4)
 
 ```
 
@@ -170,17 +178,30 @@ We will try these models on the original dataset and the deaseason electricity p
 
 ```{r}
 # Model 5: Simple moving average on deseasonal data
+Model5 <- sma(deseasonal_allsectors_price,h=12)
 
+autoplot(deseasonal_allsectors_price,series="Deseasonal")+
+  autolayer(Model5$forecast,series="SMA")
 
 # Model 6: Simple moving average on original data
+Model6 <- sma(ts_electricity_price[,"All.sectors"],h=12)
+#can use holdout=TRUE to stop time series 12 observations before the end 
 
+autoplot(ts_electricity_price[,"All.sectors"],series="Original")+
+  autolayer(Model6$forecast,series="SMA")
 
 # Model 7:  Simple exponential smoothing on deseasonal data
+Model7 <- ses(deseasonal_allsectors_price,h=12)
+plot(Model7)
 
+#autoplot(deseasonal_allsectors_price,series="Deseasonal")+
+  #autolayer(Model7$???,series="SES Model 7")
 
 # Model 8:  Simple exponential smoothing on original data
-
-
+Model8 <- ses(ts_electricity_price[,"All.sectors"],h=12)
+plot(Model8)
+#SES takes into account the error and then forecast. For the above, error is assumed to be 0.
+#SES is fixing one step ahead, if we forecast for many time steps ahead, it will simply be a straight line
 
 
 ```
@@ -196,13 +217,29 @@ When forecasting with ARIMA models, first you will need to fit the model with th
 ```{r}
 
 # Model 9:  SARIMA on original data
+Model9<-auto.arima(ts_electricity_price[,"All.sectors"])
+#we're just trying to estimate the order and the parameters for the arima model here
+Model9_for<-forecast(Model9, h=12)
+#h=12 = 12 steps ahead of time
+plot(Model9_for)
 
+autoplot(ts_electricity_price[,"All.sectors"],series="Original")+
+  autolayer(Model9$fitted,series="SARIMA Model 9")+
+  autolayer(Model9_for$mean,series = "SARIMA forecast")
 
-
+#can't use holdout function here so would need to create a separate time series object 
 
 # Model 10:  ARIMA on deseasonal data
+Model10<-auto.arima(deseasonal_allsectors_price)
+#we're just trying to estimate the order and the parameters for the arima model here
+Model10_for<-forecast(Model10, h=12)
+#h=12 = 12 steps ahead of time
+plot(Model10_for)
 
-
+autoplot(deseasonal_allsectors_price,series="Deseasoned")+
+  autolayer(Model10$fitted,series="ARIMA Model 10")+
+  autolayer(Model10_for$mean,series = "ARIMA forecast")
+#its not fair to compare errors from ARIMA and SARIMA models because we are using different datasets that have different variability  
 
 ```
 
