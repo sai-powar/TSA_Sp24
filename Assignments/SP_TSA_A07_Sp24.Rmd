@@ -1,7 +1,7 @@
 ---
 title: "ENV 797 - Time Series Analysis for Energy and Environment Applications | Spring 2024"
 subtitle: "Assignment 7 - Due date 03/07/24"
-author: "Student Name"
+author: "Sai Powar"
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -20,8 +20,21 @@ Packages needed for this assignment: "forecast","tseries". Do not forget to load
 
 ## Set up
 
-```{r}
-#Load/install required package here
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=80), tidy=FALSE) 
+```
+
+```{r package, message=FALSE}
+
+library(lubridate)
+library(ggplot2)
+library(forecast)  
+library(Kendall)
+library(tseries)
+library(outliers)
+library(tidyverse)
+library(smooth)
+library(cowplot)
 
 ```
 
@@ -29,12 +42,36 @@ Packages needed for this assignment: "forecast","tseries". Do not forget to load
 
 Consider the data from the file "Net_generation_United_States_all_sectors_monthly.csv". The data corresponds to the monthly net generation from January 2001 to December 2020 by source and is provided by the US Energy Information and Administration. **You will work with the natural gas column only**.
 
-
 ### Q1
 
 Import the csv file and create a time series object for natural gas. Make you sure you specify the **start=** and **frequency=** arguments. Plot the time series over time, ACF and PACF.
 
 ```{r}
+
+#Importing data
+raw_gen <- read.table(file="./Data/Net_generation_United_States_all_sectors_monthly.csv",header=TRUE, dec = ".",sep=",",skip = 4)
+head(raw_gen)
+
+#creating usable data frame
+natgas <- raw_gen[,c(1,4)]
+natgas <-
+  natgas %>%
+  mutate( Month = my(Month) ) %>%
+  rename( NatGas = natural.gas.thousand.megawatthours) %>%
+  arrange(Month)
+
+#creating time series object
+ts_natgas <- ts(natgas[,2],start = c(2001,1),frequency=12)
+head(ts_natgas)
+
+#plotting the series
+plot1 <- plot_grid(
+  autoplot(ts_natgas, main = "Natural Gas Generation"),
+  autoplot(Acf(ts_natgas,lag.max=40,plot=FALSE)),
+  autoplot(Pacf(ts_natgas,lag.max=40,plot=FALSE)),
+  nrow=1,ncol=3
+)
+plot1
 
 ```
 
@@ -44,25 +81,46 @@ Using the $decompose()$ or $stl()$ and the $seasadj()$ functions create a series
 
 ```{r}
 
+#creating deseasoned series
+decompose_natgas <- decompose(ts_natgas,"additive")
+deseasonal_natgas <- seasadj(decompose_natgas)
+
+#plotting the series
+plot2 <- plot_grid(
+  autoplot(deseasonal_natgas, main = "Deseasoned - Natural Gas Generation"),
+  autoplot(Acf(deseasonal_natgas,lag.max=40,plot=FALSE)),
+  autoplot(Pacf(deseasonal_natgas,lag.max=40,plot=FALSE)),
+  nrow=1,ncol=3
+)
+plot2
+ 
 ```
 
-## Modeling the seasonally adjusted or deseasonalized series
+> Answer: After removing the seasonality, the spikes at the seasonal lags are not present in the ACF and the PACF plots. The exponential decay of the ACF indicates a deterministic, linear trend. 
 
 ### Q3
 
 Run the ADF test and Mann Kendall test on the deseasonalized data from Q2. Report and explain the results.
 
-```{r}
+```{r, warning=FALSE}
 
+print("Results of Mann Kendall test/n")
+print(summary(MannKendall(deseasonal_natgas)))
+
+print("Results for ADF test/n")
+print(adf.test(deseasonal_natgas,alternative = "stationary"))
 ```
+> Answer: 
+Conclusion from MK test: The S is positive so there is an increasing trend. The p value is <0.05 so the null hypothesis is rejected and we have a significant trend in the series. 
+Conclusion from ADF test: The p-value is <0.05 so we reject the null hypothesis. The data does not have a stochastic trend.
+Both the tests indicate that the series has an increasing, linear trend. 
 
 ### Q4
 
 Using the plots from Q2 and test results from Q3 identify the ARIMA model parameters $p,d$ and $q$. Note that in this case because you removed the seasonal component prior to identifying the model you don't need to worry about seasonal component. Clearly state your criteria and any additional function in R you might use. DO NOT use the $auto.arima()$ function. You will be evaluated on ability to understand the ACF/PACF plots and interpret the test results.
 
-```{r}
+> Answer: Since the series does not have a stochastic trend, d=0. Based on the exponential decay in the ACF and the cutoff at lag 1 in the PACF plot, I predicted the model to have an AR component = 1. The MA component is not that obvious from the initial plots so q=0. 
 
-```
 
 ### Q5
 
@@ -70,11 +128,25 @@ Use `Arima()` from package "forecast" to fit an ARIMA model to your series consi
 
 ```{r}
 
+Model_100 <- Arima(deseasonal_natgas,order=c(1,0,0), include.mean = TRUE, include.drift = TRUE)
+print(Model_100)
+
 ```
 
 ### Q6
 
 Now plot the residuals of the ARIMA fit from Q5 along with residuals ACF and PACF on the same window. You may use the $checkresiduals()$ function to automatically generate the three plots. Do the residual series look like a white noise series? Why?
+
+```{r}
+
+plot_grid(
+  autoplot(Model_100$residuals, main = "Model_100"),
+  autoplot(Acf(Model_100$residuals,lag.max=40, plot = FALSE)),
+  autoplot(Pacf(Model_100$residuals,lag.max=40))
+)
+```
+
+> Answer: The residuals plot does not fully look like a white noise series. There is still some trend in the 2008-2010 and 2017-2020 periods. Also, there are still some lags that have significant coefficients in the ACF and PACF plots that could probably be eliminated with a better model. 
 
 ## Modeling the original series (with seasonality)
 
@@ -84,6 +156,8 @@ Repeat Q4-Q6 for the original series (the complete series that has the seasonal 
 
 ```{r}
 
+
+
 ```
 
 
@@ -92,7 +166,8 @@ Repeat Q4-Q6 for the original series (the complete series that has the seasonal 
 Compare the residual series for Q7 and Q6. Can you tell which ARIMA model is better representing the Natural Gas Series? Is that a fair comparison? Explain your response.
 
 ```{r}
-
+Model_101 <- Arima(deseasonal_natgas,order=c(1,0,1), include.mean = TRUE, include.drift = TRUE)
+print(Model_101)
 ```
 
 
