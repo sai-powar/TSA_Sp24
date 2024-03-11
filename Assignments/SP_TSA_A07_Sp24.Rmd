@@ -119,7 +119,7 @@ Both the tests indicate that the series has an increasing, linear trend.
 
 Using the plots from Q2 and test results from Q3 identify the ARIMA model parameters $p,d$ and $q$. Note that in this case because you removed the seasonal component prior to identifying the model you don't need to worry about seasonal component. Clearly state your criteria and any additional function in R you might use. DO NOT use the $auto.arima()$ function. You will be evaluated on ability to understand the ACF/PACF plots and interpret the test results.
 
-> Answer: Since the series does not have a stochastic trend, d=0. Based on the exponential decay in the ACF and the cutoff at lag 1 in the PACF plot, I predicted the model to have an AR component = 1. The MA component is not that obvious from the initial plots so q=0. 
+> Answer: Since the series has a significant trend, d=1. Based on the exponential decay in the ACF and the cutoff after lag 1 in the PACF plot, I predicted the model to have an AR component = p = 1. The MA component is not that obvious from the initial plots so q = 0. 
 
 
 ### Q5
@@ -128,8 +128,8 @@ Use `Arima()` from package "forecast" to fit an ARIMA model to your series consi
 
 ```{r}
 
-Model_100 <- Arima(deseasonal_natgas,order=c(1,0,0), include.mean = TRUE, include.drift = TRUE)
-print(Model_100)
+Model_110 <- Arima(deseasonal_natgas,order=c(1,1,0), include.drift = TRUE)
+print(Model_110)
 
 ```
 
@@ -140,13 +140,13 @@ Now plot the residuals of the ARIMA fit from Q5 along with residuals ACF and PAC
 ```{r}
 
 plot_grid(
-  autoplot(Model_100$residuals, main = "Model_100"),
-  autoplot(Acf(Model_100$residuals,lag.max=40, plot = FALSE)),
-  autoplot(Pacf(Model_100$residuals,lag.max=40))
+  autoplot(Model_110$residuals, main = "Model_110"),
+  autoplot(Acf(Model_110$residuals,lag.max=40, plot = FALSE),ylim=c(-0.5,0.5)),
+  autoplot(Pacf(Model_110$residuals,lag.max=40, plot = FALSE),ylim=c(-0.5,0.5))
 )
 ```
 
-> Answer: The residuals plot does not fully look like a white noise series. There is still some trend in the 2008-2010 and 2017-2020 periods. Also, there are still some lags that have significant coefficients in the ACF and PACF plots that could probably be eliminated with a better model. 
+> Answer: The residuals plot looks like a white noise series, with the mean centered around 0 and no particular trend. But, there are some significant coefficients in the ACF and PACF plots, so probably the order of the AR component could be increased.  
 
 ## Modeling the original series (with seasonality)
 
@@ -154,21 +154,82 @@ plot_grid(
 
 Repeat Q4-Q6 for the original series (the complete series that has the seasonal component). Note that when you model the seasonal series, you need to specify the seasonal part of the ARIMA model as well, i.e., $P$, $D$ and $Q$.
 
+> Answer: By using nsdiff, I identified that D=1 because seasonal differencing is needed. By using the ACF and PACF plots of the twice differenced series, I identified that Q = 1 and P = 0 because P+Q cannot be more than 1. 
+The residuals plot looks like a white noise series, with the mean centered around 0 and no particular trend. But, there are some significant coefficients in the ACF and PACF plots, so that needs  
+
 ```{r}
-
-
+# Finding out how many times differencing is needed
+ns_diff <- nsdiffs(ts_natgas)
+cat("Number of seasonal differencing needed: ",ns_diff)
 
 ```
 
+```{r}
+#Differencing the series
+natgas_seas_diff <- diff(ts_natgas,lag=12, differences=1)
+natgas_trend_diff <- diff(ts_natgas,lag =1, differences=1)
+natgas_both_diff <- diff(natgas_trend_diff,lag =12, differences=1)
+```
 
+```{r}
+#Comparing ACFs
+plot_grid(
+  autoplot(Acf(ts_natgas, lag = 40, plot=FALSE), 
+                main = "Orginal"),
+  autoplot(Acf(natgas_seas_diff, lag = 40, plot=FALSE),  
+                  main = "Seasonal-Differenced"),
+  autoplot(Acf(natgas_trend_diff, lag = 40, plot=FALSE),  
+                  main = "Trend-Differenced"),
+  autoplot(Acf(natgas_both_diff, lag = 40, plot=FALSE),  
+                  main = "Twice-Differenced"),
+  nrow=2
+)
+```
+
+```{r}
+#Comparing PACFs
+plot_grid(
+  autoplot(Pacf(ts_natgas, lag = 40, plot=FALSE), 
+                main = "Orginal"),
+  autoplot(Pacf(natgas_seas_diff, lag = 40, plot=FALSE),  
+                  main = "Seasonal-Differenced"),
+  autoplot(Pacf(natgas_trend_diff, lag = 40, plot=FALSE),  
+                  main = "Trend-Differenced"),
+  autoplot(Pacf(natgas_both_diff, lag = 40, plot=FALSE),  
+                  main = "Twice-Differenced"),
+  nrow=2
+)
+
+```
+
+```{r}
+#Twice differenced
+
+plot_grid(
+  autoplot(Acf(natgas_both_diff,lag.max=60,plot=FALSE),main="Twice-Differenced",ylim=c(-1,1)),
+  autoplot(Pacf(natgas_both_diff,lag.max=60,plot=FALSE),main="Twice-Differenced",ylim=c(-1,1)),
+  nrow=1
+)
+```
+```{r}
+#Creating SARIMA model
+Model1 <- Arima(ts_natgas,order=c(1,1,0),seasonal=c(0,1,1),include.drift=FALSE)
+print(Model1)
+
+```
+```{r}
+#Plotting the residuals
+plot_grid(
+  autoplot(Model1$residuals),
+  autoplot(Acf(Model1$residuals,lag.max=40, plot = FALSE),ylim=c(-0.5,0.5)),
+  autoplot(Pacf(Model1$residuals,lag.max=40, plot = FALSE),ylim=c(-0.5,0.5))
+)
+```
 ### Q8
 
 Compare the residual series for Q7 and Q6. Can you tell which ARIMA model is better representing the Natural Gas Series? Is that a fair comparison? Explain your response.
 
-```{r}
-Model_101 <- Arima(deseasonal_natgas,order=c(1,0,1), include.mean = TRUE, include.drift = TRUE)
-print(Model_101)
-```
+> Answer: I think the SARIMA model might be slightly better at representing the natural gas series, but it is not a fair comparison. There are lesser number of ACF and PACF terms that are not significant in the SARIMA model. But, because the ARIMA model does not include the seasonal component, it is not fair to compare the two models because they have different type of data in terms of the trends in the series.
 
 
 ## Checking your model with the auto.arima()
@@ -180,15 +241,17 @@ print(Model_101)
 Use the $auto.arima()$ command on the **deseasonalized series** to let R choose the model parameter for you. What's the order of the best ARIMA model? Does it match what you specified in Q4?
 
 ```{r}
-
+Model2 <- auto.arima(deseasonal_natgas, max.D=0,max.P=0,max.Q=0)
+print(Model2)
 ```
-
+> Answer: The order of the best ARIMA model is 1,1,1. It does not match what I had for Q4. 
 
 ### Q10
 
 Use the $auto.arima()$ command on the **original series** to let R choose the model parameters for you. Does it match what you specified in Q7?
 
 ```{r}
-
+Model3 <- auto.arima(ts_natgas)
+print(Model3)
 ```
-
+> Answer: The order of the best SARIMA model is (1,0,0)(0,1,1). It matched what I specified in Q7.
