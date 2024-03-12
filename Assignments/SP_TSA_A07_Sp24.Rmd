@@ -154,10 +154,11 @@ plot_grid(
 
 Repeat Q4-Q6 for the original series (the complete series that has the seasonal component). Note that when you model the seasonal series, you need to specify the seasonal part of the ARIMA model as well, i.e., $P$, $D$ and $Q$.
 
-> Answer: By using nsdiff, I identified that D=1 because seasonal differencing is needed. By using the ACF and PACF plots of the twice differenced series, I identified that Q = 1 and P = 0 because P+Q cannot be more than 1. 
-The residuals plot looks like a white noise series, with the mean centered around 0 and no particular trend. But, there are some significant coefficients in the ACF and PACF plots, so that needs  
+> Answer: By using nsdiff and ndiff, I identified that D=1 because seasonal differencing is needed and d=0 because the seasonal differencing is removing the linear trend as well. By using the ACF and PACF plots of the seeasonal differenced series, I identified that P = 0 and Q = 1 because there are is a negative spike at lag 12 in the ACF plot and negative spikes at lag 12 and 24 in the PACF plot. 
+The residuals plot looks like a white noise series, with the mean centered around 0 and no particular trend. The ACF and PACF values are also non-significant, barring a couple in the initial lags. 
 
 ```{r}
+
 # Finding out how many times differencing is needed
 ns_diff <- nsdiffs(ts_natgas)
 cat("Number of seasonal differencing needed: ",ns_diff)
@@ -165,10 +166,18 @@ cat("Number of seasonal differencing needed: ",ns_diff)
 ```
 
 ```{r}
+
 #Differencing the series
 natgas_seas_diff <- diff(ts_natgas,lag=12, differences=1)
-natgas_trend_diff <- diff(ts_natgas,lag =1, differences=1)
-natgas_both_diff <- diff(natgas_trend_diff,lag =12, differences=1)
+
+```
+
+```{r}
+#Checking if trend differencing is needed
+
+n_diff <- ndiffs(natgas_seas_diff)
+cat("Number of trend differencing needed: ",n_diff)
+
 ```
 
 ```{r}
@@ -177,12 +186,7 @@ plot_grid(
   autoplot(Acf(ts_natgas, lag = 40, plot=FALSE), 
                 main = "Orginal"),
   autoplot(Acf(natgas_seas_diff, lag = 40, plot=FALSE),  
-                  main = "Seasonal-Differenced"),
-  autoplot(Acf(natgas_trend_diff, lag = 40, plot=FALSE),  
-                  main = "Trend-Differenced"),
-  autoplot(Acf(natgas_both_diff, lag = 40, plot=FALSE),  
-                  main = "Twice-Differenced"),
-  nrow=2
+                  main = "Seasonal-Differenced")
 )
 ```
 
@@ -192,31 +196,30 @@ plot_grid(
   autoplot(Pacf(ts_natgas, lag = 40, plot=FALSE), 
                 main = "Orginal"),
   autoplot(Pacf(natgas_seas_diff, lag = 40, plot=FALSE),  
-                  main = "Seasonal-Differenced"),
-  autoplot(Pacf(natgas_trend_diff, lag = 40, plot=FALSE),  
-                  main = "Trend-Differenced"),
-  autoplot(Pacf(natgas_both_diff, lag = 40, plot=FALSE),  
-                  main = "Twice-Differenced"),
-  nrow=2
+                  main = "Seasonal-Differenced")
 )
 
 ```
 
 ```{r}
-#Twice differenced
+#Seasonal differenced only 
 
 plot_grid(
-  autoplot(Acf(natgas_both_diff,lag.max=60,plot=FALSE),main="Twice-Differenced",ylim=c(-1,1)),
-  autoplot(Pacf(natgas_both_diff,lag.max=60,plot=FALSE),main="Twice-Differenced",ylim=c(-1,1)),
+  autoplot(Acf(natgas_seas_diff,lag.max=60,plot=FALSE),main="Seasonal-Differenced",ylim=c(-1,1)),
+  autoplot(Pacf(natgas_seas_diff,lag.max=60,plot=FALSE),main="Seasonal-Differenced",ylim=c(-1,1)),
   nrow=1
 )
 ```
+
+
 ```{r}
 #Creating SARIMA model
-Model1 <- Arima(ts_natgas,order=c(1,1,0),seasonal=c(0,1,1),include.drift=FALSE)
+Model1 <- Arima(ts_natgas,order=c(1,0,0),seasonal=c(0,1,1),include.drift=FALSE)
 print(Model1)
 
 ```
+
+
 ```{r}
 #Plotting the residuals
 plot_grid(
