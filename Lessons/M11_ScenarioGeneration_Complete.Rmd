@@ -211,6 +211,8 @@ for(s in 1:nscen){
 #Calculate correlation again
 aux <- Y[,,5]
 cor(t(aux))
+
+#closer to what we observed in the historical data. The correlation needs to be similar to the historical data
 ```
 
 Note that the correlation is closer to the sample correlation matrix R.
@@ -232,6 +234,7 @@ axis(1,at=c(1,13),labels=c("2011","2012"))
 for(s in 2:nscen){
   lines(Y[iHP,,s],col="gray")   #adding lines to the plot corresponding to all scenarios
 } 
+
 
 ```
 
